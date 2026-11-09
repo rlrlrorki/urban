@@ -1,0 +1,871 @@
+local project = "Urban reload kei hub"
+local url = "https://raw.githubusercontent.com/Snipez-Dev/Vantix/refs/heads/main/VantixUI6"
+local VantixUI = loadstring(game:HttpGet(url))()
+
+local cloneref = (cloneref or clonereference or function(i) return i end)
+local rep = cloneref(game:GetService("ReplicatedStorage"))
+local rs = cloneref(game:GetService("RunService"))
+local plrs = cloneref(game:GetService("Players"))
+local http = cloneref(game:GetService("HttpService"))
+local cg = cloneref(game:GetService("CoreGui"))
+local tpService = cloneref(game:GetService("TeleportService"))
+local lp = plrs.LocalPlayer
+
+local cam = workspace.CurrentCamera
+workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	cam = workspace.CurrentCamera
+end)
+
+local Settings = {
+	SilentAimEnabled = false,
+	WallCheckCombat  = false,
+	AimPart          = "Head",
+	FOVSize          = 200,
+	FOVColor         = Color3.fromRGB(255, 255, 255),
+	FOVVisible       = false,
+	NoRecoil         = false,
+	NoSpread         = false,
+	FastFire         = false,
+	FastBullet       = false
+}
+
+getgenv().ESPConfig = {
+	["Enabled"] = false,
+	["Render Distance"] = 1000,
+	["Boxes"] = true,
+	["BoxColor"] = Color3.fromRGB(255, 255, 255),
+	["Healthbar"] = true,
+	["EspName"] = true,
+	["Name_Text_Color"] = Color3.fromRGB(255, 255, 255),
+	["Distance_Text"] = true,
+	["Distance_Text_Color"] = Color3.fromRGB(255, 255, 255),
+	["WallCheck"] = true,
+	["VisibleColor"] = Color3.fromRGB(0, 255, 0),
+	["InvisibleColor"] = Color3.fromRGB(255, 0, 0),
+}
+
+local esp_cfg = getgenv().ESPConfig
+
+local fonts = {}
+do
+	local function registerFont(name, weight, style, asset)
+		if not isfile(asset.Id) then writefile(asset.Id, asset.Font) end
+		if isfile(name .. ".font") then delfile(name .. ".font") end
+		local data = { name = name, faces = {{ name = "Normal", weight = weight, style = style, assetId = getcustomasset(asset.Id) }} }
+		writefile(name .. ".font", http:JSONEncode(data))
+		return getcustomasset(name .. ".font")
+	end
+	local ok, res = pcall(function()
+		return game:HttpGet("https://github.com/i77lhm/storage/raw/refs/heads/main/fonts/smallest_pixel-7.ttf")
+	end)
+	if ok then
+		local reg = registerFont("SmallestPixel", 400, "Normal", { Id = "smallest_pixel-7.ttf", Font = res })
+		fonts.pixel = Font.new(reg, Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+	else
+		fonts.pixel = Font.fromEnum(Enum.Font.Code)
+	end
+end
+
+if getgenv().Esp then getgenv().Esp.Unload() end
+
+local Esp = { 
+	Players = {}, 
+	Connections = {}, 
+	ScreenGui = Instance.new("ScreenGui", cg), 
+	Cache = Instance.new("ScreenGui", (gethui and gethui()) or cg) 
+}
+getgenv().Esp = Esp
+Esp.ScreenGui.IgnoreGuiInset = true
+Esp.ScreenGui.Name = "StandaloneESP"
+Esp.Cache.Enabled = false
+
+local function createInstance(cls, props)
+	local inst = Instance.new(cls)
+	for k, v in pairs(props) do inst[k] = v end
+	return inst
+end
+
+local function worldToScreen(pos)
+	local vp = cam.ViewportSize
+	local lpos = cam.CFrame:pointToObjectSpace(pos)
+	local ar = vp.X / vp.Y
+	local hy = -lpos.Z * math.tan(math.rad(cam.FieldOfView / 2))
+	local hx = ar * hy
+	local corner = Vector3.new(-hx, hy, lpos.Z)
+	local rel = lpos - corner
+	local sx = rel.X / (hx * 2)
+	local sy = -rel.Y / (hy * 2)
+	local on_scr = -lpos.Z > 0 and sx >= 0 and sx <= 1 and sy >= 0 and sy <= 1
+	return Vector3.new(sx * vp.X, sy * vp.Y, -lpos.Z), on_scr
+end
+
+local function connectESP(sig, fn)
+	local conn = sig:Connect(fn)
+	Esp.Connections[#Esp.Connections + 1] = conn
+	return conn
+end
+
+local function calculateBox(torso)
+	if not torso then return nil, nil, nil end
+	local top_v = torso.Position + (torso.CFrame.UpVector * 1.8) + cam.CFrame.UpVector
+	local bot_v = torso.Position - (torso.CFrame.UpVector * 2.5) - cam.CFrame.UpVector
+	local dist = (torso.Position - cam.CFrame.p).Magnitude
+	local top, top_on = worldToScreen(top_v)
+	local bot, _ = worldToScreen(bot_v)
+	local w = math.max(math.floor(math.abs(top.X - bot.X)), 8)
+	local h = math.max(math.floor(math.max(math.abs(bot.Y - top.Y), w / 2)), 12)
+	local sz = Vector2.new(math.floor(math.max(h / 1.5, w)), h)
+	local pos = Vector2.new(math.floor(top.X * 0.5 + bot.X * 0.5 - sz.X * 0.5), math.floor(math.min(top.Y, bot.Y)))
+	return sz, pos, top_on, dist
+end
+
+local function isVisible(targetPart)
+	if not targetPart or not lp.Character then return false end
+	local origin = cam.CFrame.Position
+	
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+	
+	local ignoreList = {lp.Character, cam}
+	local targetModel = targetPart:FindFirstAncestorOfClass("Model")
+	if targetModel then
+		table.insert(ignoreList, targetModel)
+	end
+	
+	local carsFolder = workspace:FindFirstChild("Cars")
+	if carsFolder then
+		table.insert(ignoreList, carsFolder)
+	end
+	
+	local maxTries = 5
+	for _ = 1, maxTries do
+		local direction = (targetPart.Position - origin)
+		raycastParams.FilterDescendantsInstances = ignoreList
+		raycastParams.IgnoreWater = true
+		
+		local result = workspace:Raycast(origin, direction, raycastParams)
+		if not result then
+			return true
+		end
+		
+		local hitPart = result.Instance
+		if hitPart then
+			local hitModel = hitPart:FindFirstAncestorOfClass("Model")
+			local isVehicle = false
+			if carsFolder and hitPart:IsDescendantOf(carsFolder) then
+				isVehicle = true
+			elseif hitPart.Parent and (hitPart.Parent:FindFirstChild("Steering") or hitPart.Parent:FindFirstChild("Seat") or hitPart.Parent:IsA("VehicleSeat")) then
+				isVehicle = true
+			elseif hitModel and (hitModel:FindFirstChild("Wheels") or hitModel:FindFirstChild("Body") or hitModel.Name:lower():find("car") or hitModel.Name:lower():find("vehicle") or hitModel.Name:lower():find("bike")) then
+				isVehicle = true
+			end
+			
+			if isVehicle and hitModel then
+				table.insert(ignoreList, hitModel)
+			else
+				if hitModel and targetModel and hitModel == targetModel then
+					return true
+				end
+				return false
+			end
+		else
+			return true
+		end
+	end
+	return false
+end
+
+local function getHealthColor(percent)
+	percent = math.clamp(percent, 0, 1)
+	if percent > 0.5 then
+		return Color3.fromRGB(255, 255, 0):Lerp(Color3.fromRGB(0, 255, 0), (percent - 0.5) * 2)
+	else
+		return Color3.fromRGB(255, 0, 0):Lerp(Color3.fromRGB(255, 255, 0), percent * 2)
+	end
+end
+
+local function addESP(player)
+	local data = { Items = {}, Info = {Character=nil, Humanoid=nil, Health=0}, HealthConn = nil }
+	local items = data.Items
+
+	items.Holder = createInstance("Frame", { Parent = Esp.ScreenGui, Visible = false, BackgroundTransparency = 1, Size = UDim2.new(0, 211, 0, 240), BorderSizePixel = 0 })
+	items.Bottom = createInstance("Frame", { Parent = items.Holder, Size = UDim2.new(1,0,0,0), BackgroundTransparency = 1, Position = UDim2.new(0,0,1,1) })
+	createInstance("UIListLayout", { HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = items.Bottom })
+	items.Top = createInstance("Frame", { Parent = items.Holder, Size = UDim2.new(1,0,0,0), BackgroundTransparency = 1, Position = UDim2.new(0,0,0,-1) })
+	createInstance("UIListLayout", { VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = items.Top })
+
+	items.BottomTexts = createInstance("Frame", { Parent = items.Bottom, BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.XY })
+	createInstance("UIListLayout", { Parent = items.BottomTexts })
+	items.TopTexts = createInstance("Frame", { Parent = items.Top, BackgroundTransparency = 1, AutomaticSize = Enum.AutomaticSize.XY })
+	createInstance("UIListLayout", { Parent = items.TopTexts })
+
+	items.Box = createInstance("Frame", { Parent = items.Holder, BackgroundTransparency = 1, Position = UDim2.new(0,1,0,1), Size = UDim2.new(1,-2,1,-2) })
+	createInstance("UIStroke", { Parent = items.Box, LineJoinMode = Enum.LineJoinMode.Miter })
+	items.Inner = createInstance("Frame", { Parent = items.Box, BackgroundTransparency = 1, Size = UDim2.new(1,0,1,0) })
+	createInstance("UIStroke", { Color = esp_cfg.BoxColor, Parent = items.Inner })
+
+	items.Healthbar = createInstance("Frame", { Name = "Left", Parent = items.Holder, BackgroundColor3 = Color3.fromRGB(0,0,0), Size = UDim2.new(0,3,1,0), Position = UDim2.new(0,-5,0,0) })
+	items.HealthbarFill = createInstance("Frame", { Parent = items.Healthbar, BackgroundColor3 = Color3.fromRGB(0,255,0), BorderSizePixel = 0, Position = UDim2.new(0,1,0,1), Size = UDim2.new(1,-2,1,-2) })
+
+	items.Text = createInstance("TextLabel", { FontFace = fonts.pixel, TextColor3 = esp_cfg.Name_Text_Color, Parent = items.TopTexts, Text = player.Name, BackgroundTransparency = 1, TextSize = 12, AutomaticSize = Enum.AutomaticSize.XY })
+	createInstance("UIStroke", { Parent = items.Text })
+
+	items.Distance = createInstance("TextLabel", { FontFace = fonts.pixel, TextColor3 = esp_cfg.Distance_Text_Color, Parent = items.BottomTexts, BackgroundTransparency = 1, TextSize = 10, AutomaticSize = Enum.AutomaticSize.XY })
+	createInstance("UIStroke", { Parent = items.Distance })
+
+	data.HealthChanged = function(val)
+		if not data.Info.Humanoid then return end
+		local maxHealth = data.Info.Humanoid.MaxHealth > 0 and data.Info.Humanoid.MaxHealth or 100
+		local mult = math.clamp(val / maxHealth, 0, 1)
+		
+		items.HealthbarFill.Size = UDim2.new(1, -2, mult, -2)
+		items.HealthbarFill.Position = UDim2.new(0, 1, 1 - mult, 1)
+		items.HealthbarFill.BackgroundColor3 = getHealthColor(mult)
+	end
+
+	data.Refresh = function()
+		local char = player.Character or player.CharacterAdded:Wait()
+		local hum = char:WaitForChild("Humanoid", 5)
+		if not hum then return end
+		data.Info.Character = char
+		data.Info.Humanoid = hum
+		data.Info.RootPart = hum.RootPart
+
+		if data.HealthConn then data.HealthConn:Disconnect() end
+		data.HealthConn = hum.HealthChanged:Connect(data.HealthChanged)
+		Esp.Connections[#Esp.Connections + 1] = data.HealthConn
+		data.HealthChanged(hum.Health)
+	end
+
+	data.Destroy = function()
+		if data.HealthConn then data.HealthConn:Disconnect() end
+		if items.Holder then items.Holder:Destroy() end
+		if Esp.Players[player.Name] then Esp.Players[player.Name] = nil end
+	end
+
+	if player.Character then task.spawn(data.Refresh) end
+	connectESP(player.CharacterAdded, data.Refresh)
+	Esp.Players[player.Name] = data
+	return data
+end
+
+local function updateESP()
+	if not Esp or not esp_cfg.Enabled then
+		for _, d in pairs(Esp.Players) do
+			if d.Items.Holder then d.Items.Holder.Visible = false end
+		end
+		return
+	end
+	
+	for _, d in pairs(Esp.Players) do
+		local char, hum = d.Info.Character, d.Info.Humanoid
+		if not (char and hum and char.Parent and hum.Health > 0) then
+			if d.Items.Holder then d.Items.Holder.Visible = false end
+			continue
+		end
+
+		local box_sz, box_pos, on_scr, dist = calculateBox(hum.RootPart)
+		local holder = d.Items.Holder
+		if not holder or dist == nil or dist > esp_cfg["Render Distance"] then
+			if holder.Visible then holder.Visible = false end
+			continue
+		end
+
+		holder.Visible = on_scr
+		if not on_scr then continue end
+		holder.Position = UDim2.fromOffset(box_pos.X, box_pos.Y)
+		holder.Size = UDim2.new(0, box_sz.X, 0, box_sz.Y)
+		d.Items.Distance.Text = tostring(math.round(dist)) .. "m"
+		
+		local targetPart = char:FindFirstChild("Head") or hum.RootPart
+		local dynamicColor = esp_cfg.BoxColor
+		if esp_cfg.WallCheck and targetPart then
+			local visible = isVisible(targetPart)
+			dynamicColor = visible and esp_cfg.VisibleColor or esp_cfg.InvisibleColor
+			d.Items.Inner.UIStroke.Color = dynamicColor
+			d.Items.Text.TextColor3 = dynamicColor
+		else
+			d.Items.Inner.UIStroke.Color = esp_cfg.BoxColor
+			d.Items.Text.TextColor3 = esp_cfg.Name_Text_Color
+		end
+
+		d.Items.Box.Visible = esp_cfg.Boxes
+		d.Items.Healthbar.Visible = esp_cfg.Healthbar
+		d.Items.Text.Visible = esp_cfg.EspName
+		d.Items.Distance.Visible = esp_cfg.Distance_Text
+	end
+end
+
+function Esp.Unload()
+	for _, p in pairs(plrs:GetPlayers()) do if Esp.Players[p.Name] then Esp.Players[p.Name].Destroy() end end
+	for _, c in pairs(Esp.Connections) do pcall(function() c:Disconnect() end) end
+	Esp.Connections = {}
+	if Esp.Loop then pcall(function() rs:UnbindFromRenderStep("Run Loop") end) end
+	pcall(function() Esp.Cache:Destroy() end)
+	pcall(function() Esp.ScreenGui:Destroy() end)
+	getgenv().Esp = nil
+end
+
+Esp.Loop = rs:BindToRenderStep("Run Loop", 400, updateESP)
+
+for _, p in ipairs(plrs:GetPlayers()) do
+	if p ~= lp then addESP(p) end
+end
+connectESP(plrs.PlayerAdded, function(p)
+	if p ~= lp then
+		connectESP(p.CharacterAdded, function()
+			task.wait(0.2)
+			if Esp.Players and not Esp.Players[p.Name] then addESP(p) end
+		end)
+	end
+end)
+connectESP(plrs.PlayerRemoving, function(p)
+	if Esp.Players and Esp.Players[p.Name] then Esp.Players[p.Name].Destroy() end
+end)
+
+if cg:FindFirstChild("FOVCircleGui") then
+    cg.FOVCircleGui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FOVCircleGui"
+screenGui.Parent = cg
+screenGui.IgnoreGuiInset = true
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local fovFrame = Instance.new("Frame")
+fovFrame.Name = "FOVFrame"
+fovFrame.Size = UDim2.new(0, Settings.FOVSize * 2, 0, Settings.FOVSize * 2)
+fovFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+fovFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+fovFrame.BackgroundTransparency = 1
+fovFrame.Visible = Settings.FOVVisible
+fovFrame.Parent = screenGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(1, 0)
+uiCorner.Parent = fovFrame
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Settings.FOVColor
+uiStroke.Thickness = 1
+uiStroke.Transparency = 0
+uiStroke.Parent = fovFrame
+
+local function getClosestTarget()
+    if not Settings.SilentAimEnabled then return nil end
+    
+    local cam = workspace.CurrentCamera
+    local center = cam.ViewportSize / 2
+    local myChar = lp.Character
+    local myRoot = myChar and (myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Head"))
+    if not myRoot then return nil end
+    
+    local bestPos = nil
+    local closestDistance = math.huge
+    
+    for _, player in ipairs(plrs:GetPlayers()) do
+        if player ~= lp then
+            local char = player.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local part = char:FindFirstChild(Settings.AimPart) or char:FindFirstChild("Head")
+                
+                if part and hum and hum.Health > 0 then
+                    if not Settings.WallCheckCombat or isVisible(part) then
+                        local sp, onScreen = cam:WorldToViewportPoint(part.Position)
+                        if onScreen then
+                            local fovDist = (Vector2.new(sp.X, sp.Y) - center).Magnitude
+                            if fovDist <= Settings.FOVSize then
+                                local worldDist = (part.Position - myRoot.Position).Magnitude
+                                if worldDist < closestDistance then
+                                    closestDistance = worldDist
+                                    bestPos = part.Position
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return bestPos
+end
+
+local old; old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    if not checkcaller() and getnamecallmethod() == "ViewportPointToRay" and rawequal(self, workspace.CurrentCamera) then
+        local ray = old(self, ...)
+        local ok, scr = pcall(getcallingscript)
+        if ok and scr and scr.Name == "WeaponClient" then
+            local ok2, pos = pcall(getClosestTarget)
+            if ok2 and pos then
+                return Ray.new(ray.Origin, (pos - ray.Origin).Unit)
+            end
+        end
+        return ray
+    end
+    return old(self, ...)
+end))
+
+local function applyGunMods()
+    local weaponsFolder = rep:FindFirstChild("Weapons")
+    local weaponDataModule = weaponsFolder and weaponsFolder:FindFirstChild("WeaponData")
+
+    if weaponDataModule then
+        local successWeapons, weapons = pcall(function()
+            return require(weaponDataModule)
+        end)
+
+        if successWeapons and type(weapons) == "table" then
+            local function makeWritable(t)
+                if setreadonly then pcall(function() setreadonly(t, false) end) end
+                for k, v in pairs(t) do
+                    if type(v) == "table" then
+                        if setreadonly then pcall(function() setreadonly(v, false) end) end
+                        makeWritable(v)
+                    end
+                end
+            end
+
+            makeWritable(weapons)
+
+            for name, weapon in pairs(weapons) do
+                if type(weapon) == "table" then
+                    if weapon.Fire then
+                        if setreadonly then pcall(function() setreadonly(weapon.Fire, false) end) end
+                        weapon.Fire.RPM = Settings.FastFire and 1500 or 600
+                        if weapon.Fire.Rocket then
+                            if setreadonly then pcall(function() setreadonly(weapon.Fire.Rocket, false) end) end
+                            weapon.Fire.Rocket.Speed = Settings.FastBullet and 9999 or 500
+                        end
+                    end
+                    
+                    if weapon.Bullet then
+                        if setreadonly then pcall(function() setreadonly(weapon.Bullet, false) end) end
+                        weapon.Bullet.Speed = Settings.FastBullet and 99999 or 1000
+                    end
+                    
+                    if weapon.Recoil then
+                        if setreadonly then pcall(function() setreadonly(weapon.Recoil, false) end) end
+                        weapon.Recoil.Up = Settings.NoRecoil and 0 or 1
+                        weapon.Recoil.Side = Settings.NoRecoil and 0 or 1
+                        weapon.Recoil.AimScale = Settings.NoRecoil and 0 or 1
+                        if weapon.Recoil.Return then
+                            weapon.Recoil.Return = Settings.NoRecoil and 10 or 1
+                        end
+                    end
+                    
+                    if weapon.Bloom then
+                        if setreadonly then pcall(function() setreadonly(weapon.Bloom, false) end) end
+                        weapon.Bloom.Hip = Settings.NoSpread and 0 or 1
+                        weapon.Bloom.Aim = Settings.NoSpread and 0 or 1
+                        weapon.Bloom.Move = Settings.NoSpread and 0 or 1
+                        weapon.Bloom.Air = Settings.NoSpread and 0 or 1
+                        weapon.Bloom.PerShot = Settings.NoSpread and 0 or 1
+                        weapon.Bloom.Max = Settings.NoSpread and 0 or 1
+                    end
+                end
+            end
+        end
+    end
+end
+
+local Window = VantixUI:CreateWindow({
+	Title       = "Kei Hub | Urban Reload",
+	Theme       = "Vantix",
+	AccentColor = Color3.fromRGB(255, 255, 255),
+	LogoID      = 110034487018208,
+	Size        = {820, 480},
+})
+
+Window:CreateTag("Kei Hub", Color3.fromRGB(88, 101, 242), nil, "shield")
+
+Window:Notify({
+	Title    = "Kei Hub",
+	Text     = "Loaded Successfully!",
+	Icon     = "check",
+	Duration = 4,
+})
+
+local CombatTab = Window:AddTab("Combat", "crosshair")
+local status, console
+
+local silentAimToggle = CombatTab:AddToggle({
+	Title    = "Silent Aim",
+	Icon     = "crosshair",
+	Default  = false,
+	Callback = function(state)
+		Settings.SilentAimEnabled = state
+		if console then console:Write("Silent Aim " .. (state and "enabled" or "disabled")) end
+	end,
+})
+
+local wallCheckCombatToggle = CombatTab:AddToggle({
+	Title    = "WallCheck",
+	Icon     = "shield",
+	Default  = false,
+	Callback = function(state)
+		Settings.WallCheckCombat = state
+		if console then console:Write("WallCheck " .. (state and "enabled" or "disabled")) end
+	end,
+})
+
+local aimPartDropdown = CombatTab:AddDropdown({
+	Title   = "Aim Part",
+	Icon    = "user",
+	Options = {"Head", "HumanoidRootPart"},
+	Default = 1,
+	Callback = function(selected)
+		Settings.AimPart = selected
+	end,
+})
+
+CombatTab:AddSeparator()
+
+local fovToggle = CombatTab:AddToggle({
+	Title    = "Draw FOV Circle",
+	Icon     = "eye",
+	Default  = false,
+	Callback = function(state)
+		Settings.FOVVisible = state
+		fovFrame.Visible = state
+	end,
+})
+
+local fovSlider = CombatTab:AddSlider({
+	Title    = "FOV Size",
+	Icon     = "maximize",
+	Min      = 50,
+	Max      = 500,
+	Default  = 200,
+	Callback = function(value)
+		Settings.FOVSize = value
+		fovFrame.Size = UDim2.new(0, value * 2, 0, value * 2)
+	end,
+})
+
+local fovColorPicker = CombatTab:AddColorPicker({
+	Title    = "FOV Color",
+	Icon     = "palette",
+	Default  = Color3.fromRGB(255, 255, 255),
+	Callback = function(color)
+		Settings.FOVColor = color
+		uiStroke.Color = color
+	end,
+})
+
+CombatTab:AddSeparator()
+status = CombatTab:AddLabel("Status: idle", "activity")
+console = CombatTab:AddConsole({ Title = "Kei Hub Activity Log", Height = 110 })
+console:Write("Kei Hub ready")
+
+local GunTab = Window:AddTab("Gun Mods", "zap")
+
+GunTab:AddToggle({
+	Title    = "No Recoil",
+	Icon     = "shield-alert",
+	Default  = false,
+	Callback = function(state)
+		Settings.NoRecoil = state
+		applyGunMods()
+		if console then console:Write("No Recoil " .. (state and "enabled" or "disabled")) end
+	end,
+})
+
+GunTab:AddToggle({
+	Title    = "No Spread",
+	Icon     = "target",
+	Default  = false,
+	Callback = function(state)
+		Settings.NoSpread = state
+		applyGunMods()
+		if console then console:Write("No Spread " .. (state and "enabled" or "disabled")) end
+	end,
+})
+
+GunTab:AddToggle({
+	Title    = "Fast Fire Rate (RPM)",
+	Icon     = "zap",
+	Default  = false,
+	Callback = function(state)
+		Settings.FastFire = state
+		applyGunMods()
+		if console then console:Write("Fast Fire Rate " .. (state and "enabled" or "disabled")) end
+	end,
+})
+
+GunTab:AddToggle({
+	Title    = "Fast Bullet Speed",
+	Icon     = "wind",
+	Default  = false,
+	Callback = function(state)
+		Settings.FastBullet = state
+		applyGunMods()
+		if console then console:Write("Fast Bullet Speed " .. (state and "enabled" or "disabled")) end
+	end,
+})
+
+GunTab:AddSeparator()
+GunTab:AddButton({
+	Title    = "Force Apply Gun Mods",
+	Icon     = "refresh-cw",
+	Text     = "Apply",
+	Callback = function()
+		applyGunMods()
+		Window:Notify({Title="Kei Hub", Text="Gun Mods Applied Successfully!", Duration=2})
+	end,
+})
+
+local ESPTab = Window:AddTab("ESP", "eye")
+
+ESPTab:AddToggle({
+	Title    = "Enable ESP",
+	Icon     = "power",
+	Default  = esp_cfg.Enabled,
+	Callback = function(state)
+		esp_cfg.Enabled = state
+		if console then console:Write("ESP " .. (state and "enabled" or "disabled")) end
+	end,
+})
+
+ESPTab:AddToggle({
+	Title    = "WallCheck Color",
+	Icon     = "shield",
+	Default  = esp_cfg.WallCheck,
+	Callback = function(state)
+		esp_cfg.WallCheck = state
+	end,
+})
+
+ESPTab:AddToggle({
+	Title    = "Boxes",
+	Icon     = "square",
+	Default  = esp_cfg.Boxes,
+	Callback = function(state)
+		esp_cfg.Boxes = state
+	end,
+})
+
+ESPTab:AddToggle({
+	Title    = "Health Bar",
+	Icon     = "heart",
+	Default  = esp_cfg.Healthbar,
+	Callback = function(state)
+		esp_cfg.Healthbar = state
+	end,
+})
+
+ESPTab:AddToggle({
+	Title    = "Player Name",
+	Icon     = "user",
+	Default  = esp_cfg.EspName,
+	Callback = function(state)
+		esp_cfg.EspName = state
+	end,
+})
+
+ESPTab:AddToggle({
+	Title    = "Distance",
+	Icon     = "map-pin",
+	Default  = esp_cfg.Distance_Text,
+	Callback = function(state)
+		esp_cfg.Distance_Text = state
+	end,
+})
+
+ESPTab:AddSeparator()
+
+ESPTab:AddSlider({
+	Title    = "Render Distance",
+	Icon     = "maximize-2",
+	Min      = 500,
+	Max      = 1000,
+	Default  = esp_cfg["Render Distance"],
+	Callback = function(value)
+		esp_cfg["Render Distance"] = value
+	end,
+})
+
+local SettingsTab = Window:AddTab("Settings", "settings")
+
+local themeNames = {}
+for name in pairs(VantixUI.Themes) do
+	table.insert(themeNames, name)
+end
+table.sort(themeNames)
+
+SettingsTab:AddDropdown({
+	Title    = "Theme",
+	Icon     = "swatch-book",
+	Options  = themeNames,
+	Default  = Window:GetTheme(),
+	Callback = function(selected)
+		Window:SetTheme(selected)
+	end,
+})
+
+SettingsTab:AddSeparator()
+SettingsTab:AddLabel("Server & Job System", "server")
+
+local serverStatusLabel = SettingsTab:AddLabel("Status: Players: " .. tostring(#plrs:GetPlayers()) .. " | Ping: 0ms", "activity")
+local targetJobId = ""
+
+SettingsTab:AddTextBox({
+	Title       = "Target Job ID",
+	Icon        = "hash",
+	Placeholder = "Enter server Job ID...",
+	Default     = "",
+	Callback    = function(text, enterPressed)
+		targetJobId = text
+	end,
+})
+
+SettingsTab:AddButton({
+	Title    = "Join Job ID",
+	Icon     = "log-in",
+	Text     = "Join",
+	Callback = function()
+		if targetJobId ~= "" then
+			Window:Notify({Title="Kei Hub", Text="Joining Job ID...", Duration=2})
+			pcall(function()
+				tpService:TeleportToPlaceInstance(game.PlaceId, targetJobId, lp)
+			end)
+		else
+			Window:Notify({Title="Kei Hub", Text="Please enter a valid Job ID!", Duration=2})
+		end
+	end,
+})
+
+SettingsTab:AddButton({
+	Title    = "Copy Job ID",
+	Icon     = "copy",
+	Text     = "Copy",
+	Callback = function()
+		local currentJobId = game.JobId
+		if currentJobId and currentJobId ~= "" then
+			if setclipboard then
+				setclipboard(currentJobId)
+				Window:Notify({Title = "Kei Hub", Text = "Copied current Job ID to clipboard!", Duration = 2})
+			else
+				Window:Notify({Title = "Kei Hub", Text = "Executor does not support setclipboard!", Duration = 2})
+			end
+		else
+			Window:Notify({Title = "Kei Hub", Text = "Current Job ID is empty/private!", Duration = 2})
+		end
+	end,
+})
+
+SettingsTab:AddButton({
+	Title    = "Rejoin Server",
+	Icon     = "rotate-cw",
+	Text     = "Rejoin",
+	Callback = function()
+		Window:Notify({Title="Kei Hub", Text="Rejoining current server...", Duration=2})
+		pcall(function()
+			tpService:Teleport(game.PlaceId, lp)
+		end)
+	end,
+})
+
+task.spawn(function()
+	while true do
+		task.wait(1)
+		pcall(function()
+			local playerCount = #plrs:GetPlayers()
+			local maxPlayers = plrs.MaxPlayers
+			local jobId = game.JobId
+			serverStatusLabel:Set("Status: Players: " .. playerCount .. "/" .. maxPlayers .. " | JobID: " .. (jobId ~= "" and jobId:sub(1, 8) .. "..." or "Private"))
+		end)
+	end
+end)
+
+SettingsTab:AddSeparator()
+
+local configName = SettingsTab:AddTextBox({
+	Title       = "Configuration Name",
+	Icon        = "file-text",
+	Placeholder = "Enter config name...",
+	Default     = "KeiHubConfig",
+	Callback    = function(text, enterPressed)
+		if enterPressed then end
+	end,
+})
+
+SettingsTab:AddSeparator()
+SettingsTab:AddLabel("Config System", "save")
+
+Window.ConfigManager:SetFolder("KeiHubConfigs")
+
+local function buildConfig(name)
+	local cfg = Window.ConfigManager:CreateConfig(name)
+	cfg:RegisterElement("SilentAim", silentAimToggle)
+	cfg:RegisterElement("WallCheckCombat", wallCheckCombatToggle)
+	cfg:RegisterElement("AimPart", aimPartDropdown)
+	cfg:RegisterElement("FOVVisible", fovToggle)
+	cfg:RegisterElement("FOVSize", fovSlider)
+	cfg:RegisterElement("FOVColor", fovColorPicker)
+	cfg:RegisterElement("ConfigName", configName)
+	return cfg
+end
+
+local savedConfigs = SettingsTab:AddDropdown({
+	Title    = "Saved Configs",
+	Icon     = "folder",
+	Options  = Window.ConfigManager:GetConfigs(),
+	Multi    = false,
+})
+
+SettingsTab:AddButton({
+	Title    = "Save Config",
+	Icon     = "save",
+	Text     = "Save",
+	Callback = function()
+		buildConfig(configName:Get()):Save()
+		savedConfigs:SetOptions(Window.ConfigManager:GetConfigs())
+		Window:Notify({Title="Kei Hub", Text="Saved config: " .. configName:Get(), Duration=2})
+	end,
+})
+
+SettingsTab:AddButton({
+	Title    = "Load Selected",
+	Icon     = "download",
+	Text     = "Load",
+	Callback = function()
+		local name = savedConfigs:Get()
+		if name and name ~= "" then
+			configName:Set(name)
+			buildConfig(name):Load()
+			Window:Notify({Title="Kei Hub", Text="Loaded config: " .. name, Duration=2})
+		end
+	end,
+})
+
+SettingsTab:AddButton({
+	Title    = "Delete Selected",
+	Icon     = "trash-2",
+	Text     = "Delete",
+	Risky    = true,
+	Tooltip  = "Deletes the config file",
+	Callback = function()
+		local name = savedConfigs:Get()
+		if name and name ~= "" then
+			Window.ConfigManager:DeleteConfig(name)
+			savedConfigs:SetOptions(Window.ConfigManager:GetConfigs())
+			Window:Notify({Title="Kei Hub", Text="Deleted config: " .. name, Duration=2})
+		end
+	end,
+})
+
+SettingsTab:AddSeparator()
+
+SettingsTab:AddButton({
+	Title    = "Unload Kei Hub",
+	Icon     = "log-out",
+	Text     = "Unload",
+	Callback = function()
+		Esp.Unload()
+		screenGui:Destroy()
+		Window:Destroy()
+	end,
+})
