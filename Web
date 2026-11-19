@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KEI Store — ศูนย์รวมคีย์ดิจิทัลคุณภาพ ส่งไวอัตโนมัติ 24 ชม.</title>
+
+    <!-- Google Fonts: Prompt, Kanit และ JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Kanit:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- ตั้งค่าสีและฟอนต์สำหรับ Tailwind CSS -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                        display: ['Kanit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        dark: {
+                            950: '#090512',
+                            900: '#0f081c',
+                            800: '#170d2b',
+                            700: '#22143d',
+                        },
+                        neon: {
+                            400: '#c084fc',
+                            500: '#a855f7',
+                            600: '#8b5cf6',
+                        }
+                    },
+                    boxShadow: {
+                        'neon': '0 0 20px rgba(139, 92, 246, 0.35)',
+                        'neon-strong': '0 0 35px rgba(168, 85, 247, 0.55)',
+                        'card-hover': '0 10px 40px -10px rgba(139, 92, 246, 0.35)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS สำหรับ Glassmorphism, Neon Glow และ Animation -->
+    <style>
+        body {
+            background-color: #090512;
+            color: #f3e8ff;
+            overflow-x: hidden;
+        }
+
+        /* ลายตารางพื้นหลังสไตล์ไซเบอร์ */
+        .bg-grid-pattern {
+            background-image:
+                linear-gradient(to right, rgba(139, 92, 246, 0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(139, 92, 246, 0.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* เอฟเฟกต์ Glassmorphism */
+        .glass {
+            background: rgba(15, 8, 28, 0.74);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .glass-card {
+            background: linear-gradient(145deg, rgba(25, 14, 46, 0.8) 0%, rgba(13, 7, 25, 0.9) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.18);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(192, 132, 252, 0.48);
+        }
+
+        /* ข้อความเรืองแสง */
+        .text-glow {
+            text-shadow: 0 0 26px rgba(168, 85, 247, 0.65);
+        }
+
+        /* ซ่อน Scrollbar สำหรับแถบหมวดหมู่บนมือถือ */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* ปรับแต่ง Scrollbar หลัก */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090512;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2e1a4d;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8b5cf6;
+        }
+
+        /* แอนิเมชันลอยเบาๆ */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: floatSlow 5s ease-in-out infinite;
+        }
+
+        /* แอนิเมชัน Toast Notification */
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .toast-enter {
+            animation: slideInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-dark-950 bg-grid-pattern selection:bg-neon-600 selection:text-white flex flex-col">
+
+    <!-- แสงเรืองรองพื้นหลัง (Ambient Purple Glow Orbs) -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-neon-600/20 rounded-full blur-[120px]"></div>
+        <div class="absolute top-1/3 -right-32 w-[28rem] h-[28rem] bg-fuchsia-600/15 rounded-full blur-[130px]"></div>
+        <div class="absolute bottom-0 left-1/3 w-80 h-80 bg-violet-700/15 rounded-full blur-[120px]"></div>
+    </div>
+
+    <!-- ==================== 1. แถบนำทาง (Navbar) ==================== -->
+    <header class="sticky top-0 z-40 glass border-b border-purple-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 md:h-20 gap-3">
+                
+                <!-- โลโก้และชื่อร้าน KEI Store -->
+                <a href="#home" class="flex items-center gap-2.5 group shrink-0">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-600 to-fuchsia-600 flex items-center justify-center shadow-neon group-hover:shadow-neon-strong transition-all duration-300 group-hover:scale-105">
+                        <i data-lucide="key-round" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-display font-extrabold text-xl tracking-wide bg-gradient-to-r from-white via-purple-200 to-neon-400 bg-clip-text text-transparent">
+                            KEI Store
+                        </span>
+                        <span class="text-[10px] text-purple-300/70 -mt-1 tracking-wider uppercase">Digital Key Shop</span>
+                    </div>
+                </a>
+
+                <!-- เมนูหลักสำหรับหน้าจอใหญ่ -->
+                <nav class="hidden md:flex items-center gap-1 lg:gap-2">
+                    <a href="#home" class="px-3.5 py-2 rounded-xl text-sm font-medium text-purple-100 hover:text-white hover:bg-purple-500/15 transition">
+                        หน้าแรก
+                    </a>
+                    <a href="#products" class="px-3.5 py-2 rounded-xl text-sm font-medium text-purple-200/80 hover:text-white hover:bg-purple-500/15 transition">
+                        สินค้าทั้งหมด
+                    </a>
+                    <button onclick="openHistoryModal()" class="px-3.5 py-2 rounded-xl text-sm font-medium text-purple-200/80 hover:text-white hover:bg-purple-500/15 transition flex items-center gap-1.5">
+                        <i data-lucide="history" class="w-4 h-4 text-neon-400"></i>
+                        ประวัติการสั่งซื้อ
+                    </button>
+                </nav>
+
+                <!-- ค้นหา + ปุ่มประวัติ + ปุ่มตะกร้า -->
+                <div class="flex items-center gap-2 sm:gap-3 flex-1 md:flex-initial justify-end">
+                    <!-- ช่องค้นหา (Desktop) -->
+                    <div class="relative hidden sm:block w-48 lg:w-64">
+                        <i data-lucide="search" class="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <input
+                            type="text"
+                            id="searchInputDesktop"
+                            oninput="handleSearch(this.value)"
+                            placeholder="ค้นหาคีย์สินค้า..."
+                            class="w-full pl-10 pr-4 py-2 rounded-xl bg-dark-900/80 border border-purple-500/25 text-sm text-white placeholder-purple-300/40 focus:outline-none focus:border-neon-400 focus:ring-2 focus:ring-neon-500/25 transition"
+                        >
+                    </div>
+
+                    <!-- ปุ่มประวัติการสั่งซื้อ (Mobile) -->
+                    <button onclick="openHistoryModal()" aria-label="ประวัติการสั่งซื้อ" class="md:hidden p-2.5 rounded-xl bg-dark-800/80 border border-purple-500/25 text-purple-200 hover:text-white hover:border-neon-400 transition active:scale-95">
+                        <i data-lucide="history" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- ปุ่มตะกร้าสินค้า -->
+                    <button onclick="openCartDrawer()" class="relative flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-neon-600/90 to-purple-600/90 hover:from-neon-500 hover:to-fuchsia-600 text-white font-medium text-sm shadow-neon hover:shadow-neon-strong transition-all active:scale-95">
+                        <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+                        <span class="hidden sm:inline">ตะกร้า</span>
+                        <span id="cartBadge" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full bg-white text-dark-950 transition-transform">
+                            0
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== 2. ส่วนแบนเนอร์หลัก (Hero Banner) ==================== -->
+    <main class="relative z-10 flex-1">
+        <section id="home" class="pt-10 pb-14 sm:pt-20 sm:pb-24 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto text-center">
+                
+                <!-- ป้ายสถานะระบบออนไลน์ -->
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border border-neon-500/35 text-xs sm:text-sm text-purple-200 mb-6 animate-float">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    ระบบส่งคีย์อัตโนมัติ KEI Store เปิดให้บริการ 24 ชม.
+                </div>
+
+                <!-- หัวข้อหลัก -->
+                <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight max-w-4xl mx-auto mb-5">
+                    <span class="bg-gradient-to-r from-neon-400 via-fuchsia-400 to-purple-300 bg-clip-text text-transparent text-glow">KEI Store</span>
+                    <span class="text-white block sm:inline"> — ศูนย์รวมคีย์ดิจิทัล</span>
+                    <span class="block text-purple-100 mt-1 sm:mt-2">ส่งไวอัตโนมัติใน 1 วินาที</span>
+                </h1>
+
+                <!-- คำอธิบายร้าน -->
+                <p class="text-purple-200/80 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
+                    ซื้อคีย์ได้ทันทีไม่ต้องรอแอดมิน รองรับทั้งการสแกน PromptPay QR และซองอั่งเปา TrueMoney Wallet ระบบตรวจสอบและจัดส่งรหัสคีย์พร้อมใช้งานอัตโนมัติตลอด 24 ชั่วโมง
+                </p>
+
+                <!-- ปุ่ม Action หลัก -->
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 mb-12 sm:mb-16">
+                    <a href="#products" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-neon-600 via-purple-600 to-fuchsia-600 hover:from-neon-500 hover:to-fuchsia-500 text-white font-semibold text-base shadow-neon hover:shadow-neon-strong transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                        <i data-lucide="zap" class="w-5 h-5"></i>
+                        ดูรายการคีย์ทั้งหมด
+                    </a>
+                    <button onclick="openHistoryModal()" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl glass hover:bg-purple-500/15 border border-purple-400/30 hover:border-neon-400 text-purple-100 font-semibold text-base transition-all duration-300 flex items-center justify-center gap-2 active:scale-95">
+                        <i data-lucide="key" class="w-5 h-5 text-neon-400"></i>
+                        ดูประวัติการสั่งซื้อ
+                    </button>
+                </div>
+
+                <!-- จุดเด่นของร้าน 3 ข้อ -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                    <div class="glass-card rounded-2xl p-5 flex items-center gap-4 text-left">
+                        <div class="w-12 h-12 rounded-xl bg-neon-600/20 border border-neon-500/30 flex items-center justify-center shrink-0">
+                            <i data-lucide="zap" class="w-6 h-6 text-neon-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-display font-bold text-lg sm:text-xl text-white">ส่งคีย์อัตโนมัติ 24 ชม.</div>
+                            <div class="text-xs sm:text-sm text-purple-300/75">ชำระเงินปุ๊บ รับรหัสคีย์ทันที</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 flex items-center gap-4 text-left">
+                        <div class="w-12 h-12 rounded-xl bg-fuchsia-600/20 border border-fuchsia-500/30 flex items-center justify-center shrink-0">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-fuchsia-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-display font-bold text-lg sm:text-xl text-white">ปลอดภัย 100%</div>
+                            <div class="text-xs sm:text-sm text-purple-300/75">รับประกันคีย์แท้ใช้งานได้จริงทุกดอก</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 flex items-center gap-4 text-left">
+                        <div class="w-12 h-12 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center shrink-0">
+                            <i data-lucide="headphones" class="w-6 h-6 text-violet-400"></i>
+                        </div>
+                        <div>
+                            <div class="font-display font-bold text-lg sm:text-xl text-white">ซัพพอร์ตไว</div>
+                            <div class="text-xs sm:text-sm text-purple-300/75">ทีมงานพร้อมช่วยเหลือผ่าน Discord</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 3. ค้นหา กรองหมวดหมู่ และรายการสินค้า ==================== -->
+        <section id="products" class="py-10 sm:py-16 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
+                
+                <!-- หัวข้อ + ป้ายโค้ดส่วนลด -->
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-7">
+                    <div>
+                        <span class="text-xs font-semibold uppercase tracking-widest text-neon-400">KEI Store Catalog</span>
+                        <h2 class="font-display font-bold text-2xl sm:text-3xl text-white mt-1">
+                            เลือกแพ็กเกจคีย์ที่ต้องการ
+                        </h2>
+                    </div>
+
+                    <!-- ปุ่มคัดลอกโค้ดส่วนลด KEI10 -->
+                    <button onclick="copyText('KEI10', 'คัดลอกโค้ดส่วนลด KEI10 แล้ว!')" class="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-purple-900/40 border border-dashed border-neon-400/50 hover:border-neon-400 hover:bg-purple-800/40 transition text-left group self-start md:self-auto active:scale-95">
+                        <i data-lucide="ticket-percent" class="w-5 h-5 text-neon-400 shrink-0"></i>
+                        <div class="text-xs sm:text-sm">
+                            <span class="text-purple-200">ใส่โค้ด </span>
+                            <span class="font-mono font-bold text-neon-400 group-hover:underline">KEI10</span>
+                            <span class="text-purple-200"> ลดทันที 10% (แตะเพื่อคัดลอก)</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- ช่องค้นหาบนมือถือ -->
+                <div class="relative sm:hidden mb-4">
+                    <i data-lucide="search" class="w-4 h-4 text-purple-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                    <input
+                        type="text"
+                        id="searchInputMobile"
+                        oninput="handleSearch(this.value)"
+                        placeholder="ค้นหาคีย์สินค้า..."
+                        class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-dark-900/90 border border-purple-500/25 text-sm text-white placeholder-purple-300/40 focus:outline-none focus:border-neon-400 transition"
+                    >
+                </div>
+
+                <!-- แถบตัวกรองหมวดหมู่ -->
+                <div id="categoryTabs" class="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
+                    <!-- เรนเดอร์ด้วย JavaScript -->
+                </div>
+
+                <!-- ตารางรายการสินค้า -->
+                <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                    <!-- เรนเดอร์ด้วย JavaScript -->
+                </div>
+
+                <!-- แสดงเมื่อไม่พบสินค้าที่ค้นหา -->
+                <div id="emptyProductState" class="hidden text-center py-16 glass-card rounded-3xl">
+                    <div class="w-16 h-16 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="search-x" class="w-8 h-8 text-purple-300"></i>
+                    </div>
+                    <h3 class="font-display font-semibold text-xl text-white mb-1">ไม่พบสินค้าที่ค้นหา</h3>
+                    <p class="text-sm text-purple-300/70 mb-4">ลองเปลี่ยนคำค้นหา หรือเลือกดูสินค้าในหมวดหมู่ทั้งหมด</p>
+                    <button onclick="resetFilters()" class="px-5 py-2.5 rounded-xl bg-neon-600 hover:bg-neon-500 text-white text-sm font-medium transition">
+                        แสดงสินค้าทั้งหมด
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== 4. ส่วนท้าย (Footer) ==================== -->
+    <footer class="relative z-10 mt-14 border-t border-purple-500/20 bg-dark-900/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <!-- แบรนด์ KEI Store -->
+                <div>
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-neon-600 to-fuchsia-600 flex items-center justify-center shadow-neon">
+                            <i data-lucide="key-round" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="font-display font-extrabold text-xl text-white">KEI Store</span>
+                    </div>
+                    <p class="text-sm text-purple-200/70 leading-relaxed">
+                        ร้านจำหน่ายคีย์ดิจิทัลคุณภาพสูง ระบบจัดส่งอัตโนมัติ 24 ชั่วโมง ปลอดภัย ใช้งานง่าย พร้อมทีมงานซัพพอร์ตคอยดูแลอย่างใกล้ชิด
+                    </p>
+                </div>
+
+                <!-- เมนูลัด -->
+                <div>
+                    <h4 class="font-display font-semibold text-white mb-3">เมนูลัด</h4>
+                    <ul class="space-y-2 text-sm text-purple-200/75">
+                        <li><a href="#home" class="hover:text-neon-400 transition">หน้าแรก</a></li>
+                        <li><a href="#products" class="hover:text-neon-400 transition">สินค้าทั้งหมด</a></li>
+                        <li><button onclick="openHistoryModal()" class="hover:text-neon-400 transition">ประวัติการสั่งซื้อ</button></li>
+                        <li><button onclick="openCartDrawer()" class="hover:text-neon-400 transition">ตะกร้าสินค้า</button></li>
+                    </ul>
+                </div>
+
+                <!-- ช่องทางติดต่อร้านค้า -->
+                <div>
+                    <h4 class="font-display font-semibold text-white mb-3">ติดต่อร้าน KEI Store</h4>
+                    <div class="flex flex-col gap-2.5">
+                        <button onclick="copyText('https://discord.gg/keistore', 'คัดลอกลิงก์ Discord ร้าน KEI Store แล้ว!')" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-500/15 border border-indigo-400/25 hover:border-indigo-400/60 text-indigo-200 text-sm transition text-left active:scale-[0.99]">
+                            <i data-lucide="message-circle" class="w-5 h-5 text-indigo-400 shrink-0"></i>
+                            <div>
+                                <div class="font-semibold text-white">Discord Official</div>
+                                <div class="text-xs text-indigo-300/80">discord.gg/keistore (ซัพพอร์ต 24 ชม.)</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-purple-500/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-purple-300/60">
+                <p>&copy; 2026 KEI Store. สงวนลิขสิทธิ์ทั้งหมด</p>
+                <p class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    ระบบจัดส่งอัตโนมัติพร้อมใช้งาน
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== 5. ตะกร้าสินค้า (Slide-over Drawer) ==================== -->
+    <div id="cartDrawerOverlay" class="fixed inset-0 z-50 hidden">
+        <div onclick="closeCartDrawer()" class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"></div>
+
+        <aside id="cartDrawerPanel" class="absolute right-0 top-0 h-full w-full max-w-md bg-dark-900 border-l border-purple-500/25 shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full">
+            
+            <!-- หัวตะกร้า -->
+            <div class="p-5 border-b border-purple-500/20 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-neon-600/20 border border-neon-500/30 flex items-center justify-center">
+                        <i data-lucide="shopping-bag" class="w-5 h-5 text-neon-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-lg text-white">ตะกร้าสินค้า</h3>
+                        <p id="cartItemCountLabel" class="text-xs text-purple-300/70">0 รายการ</p>
+                    </div>
+                </div>
+                <button onclick="closeCartDrawer()" aria-label="ปิดตะกร้า" class="p-2 rounded-xl hover:bg-purple-500/15 text-purple-300 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- รายการสินค้าในตะกร้า -->
+            <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-5 space-y-3">
+                <!-- เรนเดอร์ด้วย JavaScript -->
+            </div>
+
+            <!-- ส่วนโค้ดส่วนลดและสรุปราคา -->
+            <div id="cartFooter" class="p-5 border-t border-purple-500/20 bg-dark-950/85 space-y-4">
+                
+                <!-- ช่องกรอกโค้ดส่วนลด -->
+                <div>
+                    <label class="block text-xs text-purple-300/80 mb-1.5">โค้ดส่วนลด (ลองใช้ <span class="font-mono text-neon-400">KEI10</span>)</label>
+                    <div class="flex gap-2">
+                        <input
+                            type="text"
+                            id="promoInput"
+                            placeholder="กรอกโค้ดส่วนลด..."
+                            class="flex-1 px-3.5 py-2 rounded-xl bg-dark-800 border border-purple-500/25 text-sm text-white uppercase placeholder-purple-300/40 focus:outline-none focus:border-neon-400"
+                        >
+                        <button onclick="applyPromoCode()" class="px-4 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 border border-purple-400/30 text-sm font-medium text-white transition shrink-0">
+                            ใช้โค้ด
+                        </button>
+                    </div>
+                    <div id="promoAppliedBadge" class="hidden mt-2 flex items-center justify-between px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-300">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                            ใช้โค้ด <strong class="font-mono">KEI10</strong> ลด 10% แล้ว
+                        </span>
+                        <button onclick="removePromoCode()" class="text-emerald-200 hover:text-white underline">ยกเลิก</button>
+                    </div>
+                </div>
+
+                <!-- สรุปยอดเงิน -->
+                <div class="space-y-1.5 text-sm">
+                    <div class="flex justify-between text-purple-200/80">
+                        <span>ยอดรวมสินค้า</span>
+                        <span id="cartSubtotal">0 ฿</span>
+                    </div>
+                    <div id="cartDiscountRow" class="hidden flex justify-between text-emerald-400">
+                        <span>ส่วนลด (10%)</span>
+                        <span id="cartDiscount">-0 ฿</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-purple-500/20">
+                        <span class="font-semibold text-white">ยอดรวมสุทธิ</span>
+                        <span id="cartTotal" class="font-display font-bold text-2xl text-neon-400">0 ฿</span>
+                    </div>
+                </div>
+
+                <!-- ปุ่มไปหน้าชำระเงิน -->
+                <button id="checkoutBtn" onclick="openCheckoutModal()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-neon-600 to-fuchsia-600 hover:from-neon-500 hover:to-fuchsia-500 text-white font-semibold text-base shadow-neon hover:shadow-neon-strong transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95">
+                    <i data-lucide="credit-card" class="w-5 h-5"></i>
+                    ดำเนินการชำระเงิน
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- ==================== 6. หน้าต่างชำระเงิน (Checkout Modal) ==================== -->
+    <div id="checkoutModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div onclick="closeCheckoutModal()" class="absolute inset-0 bg-black/75 backdrop-blur-sm"></div>
+
+        <div class="relative w-full max-w-lg glass bg-dark-900/95 border border-purple-500/30 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+            
+            <!-- หัวหน้าต่าง -->
+            <div class="px-6 py-4 border-b border-purple-500/20 flex items-center justify-between shrink-0">
+                <h3 id="checkoutModalTitle" class="font-display font-bold text-xl text-white flex items-center gap-2">
+                    <i data-lucide="wallet" class="w-5 h-5 text-neon-400"></i>
+                    ชำระเงินอัตโนมัติ
+                </h3>
+                <button onclick="closeCheckoutModal()" aria-label="ปิดหน้าต่าง" class="p-2 rounded-xl hover:bg-purple-500/15 text-purple-300 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- เนื้อหาหน้าต่างชำระเงิน -->
+            <div class="p-6 overflow-y-auto">
+                
+                <!-- ขั้นตอน 1: เลือกช่องทางชำระเงิน -->
+                <div id="checkoutStepPayment" class="space-y-5">
+                    <!-- กล่องสรุปยอด -->
+                    <div class="p-4 rounded-2xl bg-dark-800/80 border border-purple-500/20 flex items-center justify-between">
+                        <div>
+                            <div class="text-xs text-purple-300/70">ยอดที่ต้องชำระทั้งหมด</div>
+                            <div id="checkoutSummaryItems" class="text-sm text-purple-100 mt-0.5">0 รายการ</div>
+                        </div>
+                        <div id="checkoutAmountDisplay" class="font-display font-extrabold text-2xl text-neon-400">0 ฿</div>
+                    </div>
+
+                    <!-- ปุ่มสลับช่องทางชำระเงิน -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button id="tabPromptPay" onclick="selectPaymentMethod('promptpay')" class="p-3 rounded-2xl border text-sm font-medium flex flex-col items-center gap-1.5 transition">
+                            <i data-lucide="qr-code" class="w-5 h-5"></i>
+                            <span>PromptPay QR</span>
+                        </button>
+                        <button id="tabTrueMoney" onclick="selectPaymentMethod('truemoney')" class="p-3 rounded-2xl border text-sm font-medium flex flex-col items-center gap-1.5 transition">
+                            <i data-lucide="gift" class="w-5 h-5"></i>
+                            <span>ซองอั่งเปา TrueMoney</span>
+                        </button>
+                    </div>
+
+                    <!-- มุมมอง PromptPay QR -->
+                    <div id="paymentPromptPayView" class="p-5 rounded-2xl bg-dark-950/75 border border-purple-500/20 text-center space-y-3">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-xs font-semibold text-blue-300">
+                            Thai QR Payment • PromptPay
+                        </div>
+
+                        <!-- QR Code SVG จำลอง -->
+                        <div class="w-44 h-44 sm:w-48 sm:h-48 mx-auto bg-white p-3 rounded-2xl shadow-lg flex items-center justify-center relative">
+                            <svg viewBox="0 0 100 100" class="w-full h-full text-slate-900" fill="currentColor">
+                                <rect x="4" y="4" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5"/>
+                                <rect x="11" y="11" width="12" height="12" rx="1"/>
+                                <rect x="70" y="4" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5"/>
+                                <rect x="77" y="11" width="12" height="12" rx="1"/>
+                                <rect x="4" y="70" width="26" height="26" rx="3" fill="none" stroke="currentColor" stroke-width="5"/>
+                                <rect x="11" y="77" width="12" height="12" rx="1"/>
+                                <rect x="38" y="6" width="6" height="6"/><rect x="50" y="6" width="6" height="12"/><rect x="60" y="12" width="6" height="6"/>
+                                <rect x="38" y="18" width="12" height="6"/><rect x="56" y="24" width="10" height="6"/>
+                                <rect x="6" y="38" width="12" height="6"/><rect x="24" y="38" width="6" height="12"/><rect x="6" y="50" width="6" height="12"/>
+                                <rect x="18" y="56" width="12" height="6"/><rect x="38" y="38" width="24" height="24" rx="4" fill="#7c3aed" opacity="0.2"/>
+                                <rect x="70" y="38" width="6" height="12"/><rect x="82" y="38" width="12" height="6"/><rect x="76" y="54" width="18" height="6"/>
+                                <rect x="38" y="70" width="12" height="6"/><rect x="56" y="70" width="6" height="12"/><rect x="70" y="70" width="12" height="12"/>
+                                <rect x="88" y="70" width="6" height="6"/><rect x="38" y="84" width="6" height="10"/><rect x="48" y="88" width="16" height="6"/>
+                                <rect x="70" y="88" width="10" height="6"/><rect x="86" y="82" width="8" height="12"/>
+                            </svg>
+                            <div class="absolute w-9 h-9 rounded-lg bg-neon-600 text-white font-display font-bold text-xs flex items-center justify-center shadow">
+                                KEI
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-purple-200/80 leading-relaxed">
+                            ชื่อบัญชี: <span class="text-white font-medium">KEI Store Official</span><br>
+                            โอนยอด <span id="qrAmountText" class="text-neon-400 font-bold">0 ฿</span> แล้วกดปุ่มยืนยันการโอนด้านล่าง
+                        </div>
+                    </div>
+
+                    <!-- มุมมองซองอั่งเปา TrueMoney -->
+                    <div id="paymentTrueMoneyView" class="hidden p-5 rounded-2xl bg-dark-950/75 border border-purple-500/20 space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-400">
+                                <i data-lucide="gift" class="w-4 h-4"></i>
+                                ซองอั่งเปา TrueMoney Wallet
+                            </span>
+                            <button type="button" onclick="fillMockAngpaoLink()" class="text-xs text-neon-400 hover:underline shrink-0">
+                                กรอกลิงก์ตัวอย่าง
+                            </button>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-purple-300/80 mb-1.5">วางลิงก์ซองอั่งเปาที่นี่</label>
+                            <input
+                                type="url"
+                                id="angpaoLinkInput"
+                                placeholder="https://gift.truemoney.com/campaign/?v=..."
+                                class="w-full px-3.5 py-2.5 rounded-xl bg-dark-800 border border-purple-500/30 text-sm text-white placeholder-purple-300/40 focus:outline-none focus:border-orange-400"
+                            >
+                        </div>
+                        <p class="text-[11px] text-purple-300/60 leading-relaxed">
+                            * ระบบตรวจสอบซองอั่งเปาอัตโนมัติไม่มีค่าธรรมเนียม (สำหรับทดสอบสามารถแตะ "กรอกลิงก์ตัวอย่าง" ได้ทันที)
+                        </p>
+                    </div>
+
+                    <!-- ปุ่มยืนยันการชำระเงิน -->
+                    <button onclick="processPayment()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-neon-600 to-fuchsia-600 hover:from-neon-500 hover:to-fuchsia-500 text-white font-semibold text-base shadow-neon hover:shadow-neon-strong transition-all flex items-center justify-center gap-2 active:scale-95">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                        ยืนยันการชำระเงิน
+                    </button>
+                </div>
+
+                <!-- ขั้นตอน 2: แอนิเมชันตรวจสอบ 1 วินาที -->
+                <div id="checkoutStepLoading" class="hidden py-12 text-center space-y-4">
+                    <div class="relative w-20 h-20 mx-auto">
+                        <div class="absolute inset-0 rounded-full border-4 border-purple-500/20"></div>
+                        <div class="absolute inset-0 rounded-full border-4 border-t-neon-400 border-r-fuchsia-500 animate-spin"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <i data-lucide="key-round" class="w-7 h-7 text-neon-400 animate-pulse"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-display font-bold text-xl text-white">กำลังตรวจสอบยอดชำระ...</h4>
+                        <p class="text-sm text-purple-300/75 mt-1">ระบบ KEI Store กำลังสร้างรหัสคีย์ให้คุณอัตโนมัติ</p>
+                    </div>
+                </div>
+
+                <!-- ขั้นตอน 3: สำเร็จและแสดงรหัสคีย์ -->
+                <div id="checkoutStepSuccess" class="hidden space-y-5">
+                    <div class="text-center space-y-2">
+                        <div class="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(16,185,129,0.35)]">
+                            <i data-lucide="check" class="w-8 h-8 text-emerald-400"></i>
+                        </div>
+                        <h4 class="font-display font-bold text-2xl text-white">ชำระเงินสำเร็จ!</h4>
+                        <p class="text-sm text-purple-200/80">ขอบคุณที่ใช้บริการ KEI Store ระบบได้บันทึกรหัสคีย์ลงในประวัติการสั่งซื้อแล้ว</p>
+                    </div>
+
+                    <!-- รายการคีย์ที่ได้รับ -->
+                    <div id="deliveredKeysList" class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                        <!-- เรนเดอร์ด้วย JavaScript -->
+                    </div>
+
+                    <!-- ปุ่มจัดการหลังรับคีย์ -->
+                    <div class="flex flex-col sm:flex-row gap-2.5 pt-2">
+                        <button onclick="copyAllDeliveredKeys()" class="flex-1 py-3 rounded-xl bg-neon-600 hover:bg-neon-500 text-white font-semibold text-sm transition flex items-center justify-center gap-2 active:scale-95">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                            คัดลอกคีย์ทั้งหมด
+                        </button>
+                        <button onclick="closeCheckoutModal()" class="flex-1 py-3 rounded-xl bg-dark-800 hover:bg-dark-700 border border-purple-500/30 text-purple-100 font-semibold text-sm transition active:scale-95">
+                            เสร็จสิ้น
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 7. หน้าต่างประวัติการสั่งซื้อ (Order History Modal) ==================== -->
+    <div id="historyModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+        <div onclick="closeHistoryModal()" class="absolute inset-0 bg-black/75 backdrop-blur-sm"></div>
+
+        <div class="relative w-full max-w-2xl glass bg-dark-900/95 border border-purple-500/30 rounded-3xl shadow-2xl overflow-hidden max-h-[88vh] flex flex-col">
+            <!-- หัวหน้าต่าง -->
+            <div class="px-6 py-4 border-b border-purple-500/20 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-neon-600/20 border border-neon-500/30 flex items-center justify-center">
+                        <i data-lucide="history" class="w-5 h-5 text-neon-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-lg text-white">ประวัติการสั่งซื้อ</h3>
+                        <p class="text-xs text-purple-300/70">รหัสคีย์ทั้งหมดถูกบันทึกไว้ในเครื่องของคุณ</p>
+                    </div>
+                </div>
+                <button onclick="closeHistoryModal()" aria-label="ปิดหน้าต่าง" class="p-2 rounded-xl hover:bg-purple-500/15 text-purple-300 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- รายการประวัติ -->
+            <div id="historyListContainer" class="p-6 overflow-y-auto space-y-4 flex-1">
+                <!-- เรนเดอร์ด้วย JavaScript -->
+            </div>
+
+            <!-- ส่วนท้ายประวัติ (ปุ่มล้างประวัติพร้อมตัวเลือกยืนยันในตัว) -->
+            <div id="historyFooter" class="hidden px-6 py-3.5 border-t border-purple-500/20 bg-dark-950/75 flex items-center justify-between">
+                <span id="historyOrderCount" class="text-xs text-purple-300/70">ทั้งหมด 0 รายการ</span>
+                <div id="clearHistoryControls">
+                    <button onclick="showClearHistoryConfirm()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        ล้างประวัติทั้งหมด
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 8. กล่องแจ้งเตือน (Toast Container) ==================== -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2.5 max-w-sm w-[calc(100%-2.5rem)] pointer-events-none"></div>
+
+    <!-- ==================== JavaScript ระบบการทำงานทั้งหมด ==================== -->
+    <script>
+        /**
+         * รายการสินค้าทั้ง 6 แพ็กเกจของร้าน KEI Store
+         */
+        const PRODUCTS = [
+            {
+                id: 'key-1d',
+                name: 'Key 1 Day',
+                category: 'daily',
+                categoryLabel: 'รายวัน',
+                price: 29,
+                stock: 150,
+                badge: 'ทดลองใช้',
+                badgeColor: 'bg-sky-500/20 text-sky-300 border-sky-400/30',
+                icon: 'clock',
+                highlight: false,
+                description: 'คีย์ทดลองใช้งาน 24 ชั่วโมงเต็ม เหมาะสำหรับผู้ที่ต้องการลองระบบก่อนตัดสินใจซื้อระยะยาว',
+                features: ['เปิดใช้งานได้ทันทีหลังซื้อ', 'ครบทุกฟีเจอร์หลัก', 'รับรหัสคีย์อัตโนมัติใน 1 วินาที']
+            },
+            {
+                id: 'key-7d',
+                name: 'Key 7 Days',
+                category: 'weekly',
+                categoryLabel: 'รายสัปดาห์',
+                price: 129,
+                stock: 92,
+                badge: 'ยอดนิยม',
+                badgeColor: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/30',
+                icon: 'flame',
+                highlight: false,
+                description: 'แพ็กเกจยอดนิยม ใช้งานต่อเนื่องได้ 7 วันเต็ม ประหยัดกว่าซื้อรายวันถึง 36%',
+                features: ['ใช้งานต่อเนื่อง 7 วันเต็ม', 'อัปเดตแพตช์ฟรีตลอดสัปดาห์', 'รองรับการรีเซ็ต HWID']
+            },
+            {
+                id: 'key-30d',
+                name: 'Key 30 Days',
+                category: 'monthly',
+                categoryLabel: 'รายเดือน',
+                price: 299,
+                stock: 68,
+                badge: 'ขายดี',
+                badgeColor: 'bg-violet-500/20 text-violet-300 border-violet-400/30',
+                icon: 'calendar-check',
+                highlight: false,
+                description: 'แพ็กเกจรายเดือนสุดคุ้ม ใช้งานยาวๆ 30 วันเต็ม พร้อมรับอัปเดตเวอร์ชันใหม่ก่อนใคร',
+                features: ['ใช้งานยาวนาน 30 วันเต็ม', 'ประหยัดกว่าซื้อรายวัน 65%', 'แถมสิทธิ์ซัพพอร์ตด่วน']
+            },
+            {
+                id: 'key-lifetime',
+                name: 'Key Lifetime',
+                category: 'lifetime',
+                categoryLabel: 'ถาวร',
+                price: 599,
+                stock: 30,
+                badge: 'คุ้มที่สุด',
+                badgeColor: 'bg-gradient-to-r from-neon-600 to-fuchsia-600 text-white border-neon-400/50 shadow-neon',
+                icon: 'crown',
+                highlight: true,
+                description: 'จ่ายครั้งเดียวจบ! ใช้งานถาวรไม่มีวันหมดอายุ อัปเดตฟีเจอร์ใหม่ฟรีตลอดชีพไม่มีค่าใช้จ่ายเพิ่ม',
+                features: ['ใช้งานถาวรตลอดชีพ', 'อัปเดตเวอร์ชันใหม่ฟรีทุกแพตช์', 'แถมสิทธิ์รีเซ็ต HWID ฟรี 1 ครั้ง/เดือน']
+            },
+            {
+                id: 'hwid-reset',
+                name: 'บริการรีเซ็ต HWID',
+                category: 'addon',
+                categoryLabel: 'บริการเสริม',
+                price: 49,
+                stock: 320,
+                badge: 'พร้อมส่ง',
+                badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
+                icon: 'refresh-cw',
+                highlight: false,
+                description: 'โทเค็นรีเซ็ต HWID ทันที สำหรับลูกค้าที่เปลี่ยนเครื่องใหม่หรือลง Windows ใหม่',
+                features: ['รีเซ็ตได้ทันทีไม่ต้องรอแอดมิน', 'ใช้ได้กับคีย์ KEI Store ทุกรุ่น', 'เก็บโค้ดไว้ใช้เมื่อไหร่ก็ได้']
+            },
+            {
+                id: 'vip-bundle',
+                name: 'VIP Bundle',
+                category: 'lifetime',
+                categoryLabel: 'ถาวร',
+                price: 899,
+                stock: 15,
+                badge: 'VIP พิเศษ',
+                badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
+                icon: 'gem',
+                highlight: false,
+                description: 'แพ็กเกจระดับ VIP รวม Key Lifetime + สิทธิ์รีเซ็ต HWID ไม่จำกัด + ยศพิเศษและห้องซัพพอร์ตส่วนตัว',
+                features: ['รวม Key Lifetime + ฟีเจอร์ VIP ทั้งหมด', 'รีเซ็ต HWID ฟรีไม่จำกัดครั้ง', 'ยศพิเศษใน Discord + ทีมงานดูแลส่วนตัว']
+            }
+        ];
+
+        /**
+         * หมวดหมู่สินค้าสำหรับตัวกรอง
+         */
+        const CATEGORIES = [
+            { id: 'all', label: 'ทั้งหมด' },
+            { id: 'daily', label: 'รายวัน' },
+            { id: 'weekly', label: 'รายสัปดาห์' },
+            { id: 'monthly', label: 'รายเดือน' },
+            { id: 'lifetime', label: 'ถาวร' },
+            { id: 'addon', label: 'บริการเสริม' }
+        ];
+
+        // สถานะของแอปพลิเคชัน
+        let activeCategory = 'all';
+        let searchQuery = '';
+        let cart = []; // [{ productId, quantity }]
+        let appliedPromo = null; // 'KEI10' หรือ null
+        let selectedPaymentMethod = 'promptpay'; // 'promptpay' | 'truemoney'
+        let lastDeliveredKeys = [];
+        const STORAGE_KEY = 'kei_store_order_history_v1';
+
+        /**
+         * เริ่มต้นการทำงานเมื่อโหลดหน้าเว็บเสร็จ
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            renderProducts();
+            updateCartUI();
+            selectPaymentMethod('promptpay');
+            lucide.createIcons();
+        });
+
+        /**
+         * แสดงกล่องแจ้งเตือน Toast (แทนการใช้ alert)
+         */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-dark-800/95 border-emerald-500/40 text-emerald-100',
+                error: 'bg-dark-800/95 border-rose-500/40 text-rose-100',
+                info: 'bg-dark-800/95 border-neon-500/40 text-purple-100'
+            };
+            const icons = {
+                success: '<i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>',
+                error: '<i data-lucide="alert-circle" class="w-5 h-5 text-rose-400 shrink-0"></i>',
+                info: '<i data-lucide="sparkles" class="w-5 h-5 text-neon-400 shrink-0"></i>'
+            };
+
+            toast.className = `pointer-events-auto toast-enter flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-xl text-sm ${styles[type] || styles.info}`;
+            toast.innerHTML = `
+                ${icons[type] || icons.info}
+                <span class="flex-1 leading-snug">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons({ nodes: [toast] });
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.25s ease';
+                setTimeout(() => toast.remove(), 250);
+            }, 3000);
+        }
+
+        /**
+         * คัดลอกข้อความลงคลิปบอร์ดอย่างปลอดภัย (รองรับมือถือและ iFrame)
+         */
+        function copyText(text, successMsg = 'คัดลอกลงคลิปบอร์ดแล้ว!') {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.focus();
+                textarea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                if (successful) {
+                    showToast(successMsg, 'success');
+                } else {
+                    showToast('ไม่สามารถคัดลอกได้ กรุณาลองใหม่อีกครั้ง', 'error');
+                }
+            } catch (err) {
+                showToast('เกิดข้อผิดพลาดในการคัดลอก', 'error');
+            }
+        }
+
+        /**
+         * เรนเดอร์ปุ่มตัวกรองหมวดหมู่
+         */
+        function renderCategories() {
+            const container = document.getElementById('categoryTabs');
+            container.innerHTML = CATEGORIES.map(cat => {
+                const isActive = activeCategory === cat.id;
+                return `
+                    <button
+                        onclick="setCategory('${cat.id}')"
+                        class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 active:scale-95 ${
+                            isActive
+                            ? 'bg-gradient-to-r from-neon-600 to-fuchsia-600 text-white shadow-neon'
+                            : 'glass text-purple-200/80 hover:text-white hover:border-neon-400/40'
+                        }"
+                    >
+                        ${cat.label}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setCategory(categoryId) {
+            activeCategory = categoryId;
+            renderCategories();
+            renderProducts();
+        }
+
+        function handleSearch(value) {
+            searchQuery = value.trim().toLowerCase();
+            const desktopInput = document.getElementById('searchInputDesktop');
+            const mobileInput = document.getElementById('searchInputMobile');
+            if (desktopInput && desktopInput.value !== value) desktopInput.value = value;
+            if (mobileInput && mobileInput.value !== value) mobileInput.value = value;
+            renderProducts();
+        }
+
+        function resetFilters() {
+            activeCategory = 'all';
+            handleSearch('');
+            renderCategories();
+            renderProducts();
+        }
+
+        /**
+         * เรนเดอร์การ์ดสินค้าทั้งหมด
+         */
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const emptyState = document.getElementById('emptyProductState');
+
+            const filtered = PRODUCTS.filter(p => {
+                const matchCat = activeCategory === 'all' || p.category === activeCategory;
+                const matchSearch = !searchQuery ||
+                    p.name.toLowerCase().includes(searchQuery) ||
+                    p.description.toLowerCase().includes(searchQuery) ||
+                    p.categoryLabel.toLowerCase().includes(searchQuery);
+                return matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(product => `
+                <article class="glass-card rounded-3xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover relative overflow-hidden ${
+                    product.highlight ? 'ring-2 ring-neon-500/70 shadow-neon' : ''
+                }">
+                    ${product.highlight ? '<div class="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-neon-500 via-fuchsia-500 to-purple-400"></div>' : ''}
+
+                    <div>
+                        <div class="flex items-start justify-between gap-3 mb-4">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-neon-600/30 to-fuchsia-600/20 border border-neon-500/30 flex items-center justify-center shrink-0">
+                                <i data-lucide="${product.icon}" class="w-6 h-6 text-neon-400"></i>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold border ${product.badgeColor}">
+                                ${product.badge}
+                            </span>
+                        </div>
+
+                        <h3 class="font-display font-bold text-xl text-white mb-1.5">${product.name}</h3>
+                        <p class="text-xs sm:text-sm text-purple-200/70 leading-relaxed mb-4">
+                            ${product.description}
+                        </p>
+
+                        <ul class="space-y-1.5 mb-5">
+                            ${product.features.map(f => `
+                                <li class="flex items-center gap-2 text-xs text-purple-100/85">
+                                    <i data-lucide="check" class="w-3.5 h-3.5 text-neon-400 shrink-0"></i>
+                                    <span>${f}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="pt-4 border-t border-purple-500/15 space-y-4">
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <div class="text-[11px] text-purple-300/60">ราคา</div>
+                                <div class="font-display font-extrabold text-2xl sm:text-3xl text-white">
+                                    ${product.price.toLocaleString()} <span class="text-base font-semibold text-neon-400">฿</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-dark-950/75 border border-purple-500/20 text-xs text-purple-200">
+                                    <span class="w-1.5 h-1.5 rounded-full ${product.stock > 0 ? 'bg-emerald-400' : 'bg-rose-500'}"></span>
+                                    คงเหลือ ${product.stock}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button
+                                onclick="addToCart('${product.id}')"
+                                ${product.stock <= 0 ? 'disabled' : ''}
+                                class="py-2.5 px-3 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 border border-purple-400/30 hover:border-neon-400 text-purple-100 font-medium text-xs sm:text-sm transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40"
+                            >
+                                <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                                เพิ่มลงตะกร้า
+                            </button>
+                            <button
+                                onclick="buyNow('${product.id}')"
+                                ${product.stock <= 0 ? 'disabled' : ''}
+                                class="py-2.5 px-3 rounded-xl bg-gradient-to-r from-neon-600 to-fuchsia-600 hover:from-neon-500 hover:to-fuchsia-500 text-white font-semibold text-xs sm:text-sm shadow-neon transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40"
+                            >
+                                <i data-lucide="zap" class="w-4 h-4"></i>
+                                ซื้อทันที
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        // ==================== ระบบตะกร้าสินค้า ====================
+
+        function addToCart(productId, silent = false) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            if (!product || product.stock <= 0) {
+                showToast('สินค้าหมดชั่วคราว', 'error');
+                return;
+            }
+
+            const existing = cart.find(item => item.productId === productId);
+            if (existing) {
+                if (existing.quantity >= product.stock) {
+                    showToast('จำนวนสินค้าในตะกร้าครบตามสต็อกที่มีแล้ว', 'error');
+                    return;
+                }
+                existing.quantity += 1;
+            } else {
+                cart.push({ productId, quantity: 1 });
+            }
+
+            updateCartUI();
+            if (!silent) {
+                showToast(`เพิ่ม "${product.name}" ลงตะกร้าแล้ว`, 'info');
+            }
+        }
+
+        function buyNow(productId) {
+            const existing = cart.find(item => item.productId === productId);
+            if (!existing) {
+                addToCart(productId, true);
+            }
+            openCheckoutModal();
+        }
+
+        function updateCartQuantity(productId, delta) {
+            const index = cart.findIndex(item => item.productId === productId);
+            if (index === -1) return;
+
+            const product = PRODUCTS.find(p => p.id === productId);
+            const newQty = cart[index].quantity + delta;
+
+            if (newQty <= 0) {
+                cart.splice(index, 1);
+            } else if (product && newQty > product.stock) {
+                showToast('ไม่สามารถเพิ่มเกินจำนวนสต็อกคงเหลือได้', 'error');
+                return;
+            } else {
+                cart[index].quantity = newQty;
+            }
+
+            updateCartUI();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.productId !== productId);
+            updateCartUI();
+        }
+
+        function calculateTotals() {
+            const subtotal = cart.reduce((sum, item) => {
+                const product = PRODUCTS.find(p => p.id === item.productId);
+                return sum + (product ? product.price * item.quantity : 0);
+            }, 0);
+            const discount = appliedPromo === 'KEI10' ? Math.round(subtotal * 0.10) : 0;
+            const total = Math.max(0, subtotal - discount);
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            return { subtotal, discount, total, totalItems };
+        }
+
+        function applyPromoCode() {
+            const input = document.getElementById('promoInput');
+            const code = input.value.trim().toUpperCase();
+
+            if (!code) {
+                showToast('กรุณากรอกโค้ดส่วนลด', 'error');
+                return;
+            }
+
+            if (code === 'KEI10') {
+                appliedPromo = 'KEI10';
+                input.value = '';
+                updateCartUI();
+                showToast('ใช้โค้ดส่วนลด KEI10 ลด 10% สำเร็จ!', 'success');
+            } else {
+                showToast('โค้ดส่วนลดไม่ถูกต้อง (ลองใช้โค้ด KEI10)', 'error');
+            }
+        }
+
+        function removePromoCode() {
+            appliedPromo = null;
+            updateCartUI();
+            showToast('ยกเลิกโค้ดส่วนลดแล้ว', 'info');
+        }
+
+        function updateCartUI() {
+            const { subtotal, discount, total, totalItems } = calculateTotals();
+
+            const badge = document.getElementById('cartBadge');
+            badge.textContent = totalItems;
+            badge.classList.add('scale-125');
+            setTimeout(() => badge.classList.remove('scale-125'), 150);
+
+            document.getElementById('cartItemCountLabel').textContent = `${totalItems} รายการ`;
+            document.getElementById('cartSubtotal').textContent = `${subtotal.toLocaleString()} ฿`;
+            document.getElementById('cartTotal').textContent = `${total.toLocaleString()} ฿`;
+
+            const discountRow = document.getElementById('cartDiscountRow');
+            const promoBadge = document.getElementById('promoAppliedBadge');
+            if (appliedPromo === 'KEI10' && subtotal > 0) {
+                discountRow.classList.remove('hidden');
+                promoBadge.classList.remove('hidden');
+                document.getElementById('cartDiscount').textContent = `-${discount.toLocaleString()} ฿`;
+            } else {
+                discountRow.classList.add('hidden');
+                if (appliedPromo !== 'KEI10') promoBadge.classList.add('hidden');
+            }
+
+            document.getElementById('checkoutBtn').disabled = cart.length === 0;
+
+            const container = document.getElementById('cartItemsContainer');
+            if (cart.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center py-12">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-3">
+                            <i data-lucide="shopping-cart" class="w-7 h-7 text-purple-400/60"></i>
+                        </div>
+                        <p class="font-medium text-purple-100">ตะกร้าสินค้ายังว่างอยู่</p>
+                        <p class="text-xs text-purple-300/60 mt-1">เลือกซื้อคีย์ที่ต้องการจากหน้าร้าน KEI Store ได้เลย</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = cart.map(item => {
+                    const p = PRODUCTS.find(prod => prod.id === item.productId);
+                    if (!p) return '';
+                    return `
+                        <div class="p-3.5 rounded-2xl bg-dark-800/80 border border-purple-500/20 flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-neon-600/20 border border-neon-500/30 flex items-center justify-center shrink-0">
+                                <i data-lucide="${p.icon}" class="w-5 h-5 text-neon-400"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-medium text-sm text-white truncate">${p.name}</h4>
+                                <div class="text-xs text-neon-400 font-semibold mt-0.5">${(p.price * item.quantity).toLocaleString()} ฿</div>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="updateCartQuantity('${p.id}', -1)" class="w-7 h-7 rounded-lg bg-dark-900 hover:bg-purple-500/20 border border-purple-500/25 flex items-center justify-center text-purple-200 transition">
+                                    <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <span class="w-6 text-center text-sm font-semibold text-white">${item.quantity}</span>
+                                <button onclick="updateCartQuantity('${p.id}', 1)" class="w-7 h-7 rounded-lg bg-dark-900 hover:bg-purple-500/20 border border-purple-500/25 flex items-center justify-center text-purple-200 transition">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="removeFromCart('${p.id}')" aria-label="ลบสินค้า" class="ml-1 p-1.5 rounded-lg text-purple-400 hover:text-rose-400 hover:bg-rose-500/10 transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            lucide.createIcons();
+        }
+
+        function openCartDrawer() {
+            const overlay = document.getElementById('cartDrawerOverlay');
+            const panel = document.getElementById('cartDrawerPanel');
+            overlay.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                panel.classList.remove('translate-x-full');
+            });
+        }
+
+        function closeCartDrawer() {
+            const overlay = document.getElementById('cartDrawerOverlay');
+            const panel = document.getElementById('cartDrawerPanel');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        }
+
+        // ==================== ระบบชำระเงินและออกคีย์อัตโนมัติ ====================
+
+        function openCheckoutModal() {
+            if (cart.length === 0) {
+                showToast('กรุณาเพิ่มสินค้าลงตะกร้าก่อนชำระเงิน', 'error');
+                return;
+            }
+
+            closeCartDrawer();
+            const { total, totalItems } = calculateTotals();
+            document.getElementById('checkoutAmountDisplay').textContent = `${total.toLocaleString()} ฿`;
+            document.getElementById('qrAmountText').textContent = `${total.toLocaleString()} ฿`;
+            document.getElementById('checkoutSummaryItems').textContent = `${totalItems} รายการ ${appliedPromo ? '(ใช้โค้ด KEI10)' : ''}`;
+
+            document.getElementById('checkoutStepPayment').classList.remove('hidden');
+            document.getElementById('checkoutStepLoading').classList.add('hidden');
+            document.getElementById('checkoutStepSuccess').classList.add('hidden');
+            document.getElementById('checkoutModalTitle').innerHTML = '<i data-lucide="wallet" class="w-5 h-5 text-neon-400"></i> ชำระเงินอัตโนมัติ';
+
+            const modal = document.getElementById('checkoutModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeCheckoutModal() {
+            const modal = document.getElementById('checkoutModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+            const tabPP = document.getElementById('tabPromptPay');
+            const tabTM = document.getElementById('tabTrueMoney');
+            const viewPP = document.getElementById('paymentPromptPayView');
+            const viewTM = document.getElementById('paymentTrueMoneyView');
+
+            const activeClasses = 'bg-neon-600/20 border-neon-400 text-white shadow-neon';
+            const inactiveClasses = 'bg-dark-800/60 border-purple-500/20 text-purple-300 hover:border-purple-400/50';
+
+            if (method === 'promptpay') {
+                tabPP.className = `p-3 rounded-2xl border text-sm font-medium flex flex-col items-center gap-1.5 transition ${activeClasses}`;
+                tabTM.className = `p-3 rounded-2xl border text-sm font-medium flex flex-col items-center gap-1.5 transition ${inactiveClasses}`;
+                viewPP.classList.remove('hidden');
+                viewTM.classList.add('hidden');
+            } else {
+                tabTM.className = `p-3 rounded-2xl border text-sm font-medium flex flex-col items-center gap-1.5 transition ${activeClasses}`;
+                tabPP.className = `p-3 rounded-2xl border text-sm font-medium flex flex-col items-center gap-1.5 transition ${inactiveClasses}`;
+                viewTM.classList.remove('hidden');
+                viewPP.classList.add('hidden');
+            }
+        }
+
+        function fillMockAngpaoLink() {
+            document.getElementById('angpaoLinkInput').value = 'https://gift.truemoney.com/campaign/?v=0198keistore8899demo';
+            showToast('กรอกลิงก์ซองอั่งเปาตัวอย่างแล้ว', 'info');
+        }
+
+        /**
+         * สุ่มสร้างคีย์รูปแบบ KEI-XXXX-XXXX-XXXX
+         */
+        function generateLicenseKey() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            const segment = () => {
+                let str = '';
+                for (let i = 0; i < 4; i++) {
+                    str += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return str;
+            };
+            return `KEI-${segment()}-${segment()}-${segment()}`;
+        }
+
+        /**
+         * ยืนยันการชำระเงิน -> แสดงแอนิเมชันตรวจสอบ 1 วินาที -> สุ่มคีย์และบันทึกประวัติ
+         */
+        function processPayment() {
+            if (selectedPaymentMethod === 'truemoney') {
+                const link = document.getElementById('angpaoLinkInput').value.trim();
+                if (!link) {
+                    showToast('กรุณาวางลิงก์ซองอั่งเปา TrueMoney ก่อนยืนยัน', 'error');
+                    return;
+                }
+            }
+
+            document.getElementById('checkoutStepPayment').classList.add('hidden');
+            document.getElementById('checkoutStepLoading').classList.remove('hidden');
+
+            setTimeout(() => {
+                const { subtotal, discount, total } = calculateTotals();
+                const generatedItems = [];
+
+                cart.forEach(item => {
+                    const product = PRODUCTS.find(p => p.id === item.productId);
+                    if (!product) return;
+
+                    product.stock = Math.max(0, product.stock - item.quantity);
+
+                    for (let i = 0; i < item.quantity; i++) {
+                        generatedItems.push({
+                            productName: product.name,
+                            price: product.price,
+                            key: generateLicenseKey()
+                        });
+                    }
+                });
+
+                lastDeliveredKeys = generatedItems.map(i => i.key);
+
+                const newOrder = {
+                    orderId: `KEI-${Date.now().toString().slice(-6)}`,
+                    date: new Date().toLocaleString('th-TH', {
+                        year: 'numeric', month: 'short', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    }),
+                    paymentMethod: selectedPaymentMethod === 'promptpay' ? 'PromptPay QR' : 'ซองอั่งเปา TrueMoney',
+                    subtotal,
+                    discount,
+                    total,
+                    items: generatedItems
+                };
+
+                saveOrderToHistory(newOrder);
+
+                cart = [];
+                appliedPromo = null;
+                document.getElementById('angpaoLinkInput').value = '';
+                updateCartUI();
+                renderProducts();
+
+                renderDeliveredKeys(generatedItems);
+                document.getElementById('checkoutStepLoading').classList.add('hidden');
+                document.getElementById('checkoutStepSuccess').classList.remove('hidden');
+                document.getElementById('checkoutModalTitle').innerHTML = '<i data-lucide="sparkles" class="w-5 h-5 text-emerald-400"></i> รับคีย์สินค้าสำเร็จ';
+                lucide.createIcons();
+                showToast('ชำระเงินสำเร็จ! รับรหัสคีย์ของคุณได้เลย', 'success');
+            }, 1000);
+        }
+
+        function renderDeliveredKeys(items) {
+            const container = document.getElementById('deliveredKeysList');
+            container.innerHTML = items.map(item => `
+                <div class="p-3.5 rounded-2xl bg-dark-950/80 border border-neon-500/30 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="text-xs text-purple-300/75 truncate">${item.productName}</div>
+                        <div class="font-mono font-bold text-sm sm:text-base text-neon-400 tracking-wider select-all mt-0.5">${item.key}</div>
+                    </div>
+                    <button onclick="copyText('${item.key}', 'คัดลอกคีย์ ${item.key} แล้ว!')" class="px-3 py-2 rounded-xl bg-neon-600/20 hover:bg-neon-600 border border-neon-500/30 text-xs font-medium text-white transition flex items-center gap-1.5 shrink-0">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        คัดลอก
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function copyAllDeliveredKeys() {
+            if (lastDeliveredKeys.length === 0) return;
+            copyText(lastDeliveredKeys.join('\n'), `คัดลอกคีย์ทั้งหมด ${lastDeliveredKeys.length} รายการแล้ว!`);
+        }
+
+        // ==================== ระบบประวัติการสั่งซื้อ (localStorage) ====================
+
+        function getPurchaseHistory() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveOrderToHistory(order) {
+            try {
+                const history = getPurchaseHistory();
+                history.unshift(order);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+            } catch (e) {
+                showToast('ไม่สามารถบันทึกประวัติลงเครื่องได้', 'error');
+            }
+        }
+
+        function openHistoryModal() {
+            renderHistoryList();
+            resetClearHistoryControls();
+            const modal = document.getElementById('historyModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeHistoryModal() {
+            const modal = document.getElementById('historyModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderHistoryList() {
+            const history = getPurchaseHistory();
+            const container = document.getElementById('historyListContainer');
+            const footer = document.getElementById('historyFooter');
+
+            if (history.length === 0) {
+                footer.classList.add('hidden');
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="inbox" class="w-8 h-8 text-purple-400/60"></i>
+                        </div>
+                        <h4 class="font-display font-semibold text-lg text-white">ยังไม่มีประวัติการสั่งซื้อ</h4>
+                        <p class="text-sm text-purple-300/65 mt-1 mb-5">เมื่อคุณสั่งซื้อสินค้า รหัสคีย์ทั้งหมดจะถูกเก็บไว้ที่นี่</p>
+                        <button onclick="closeHistoryModal()" class="px-5 py-2.5 rounded-xl bg-neon-600 hover:bg-neon-500 text-white text-sm font-medium transition">
+                            ไปเลือกซื้อคีย์
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            footer.classList.remove('hidden');
+            document.getElementById('historyOrderCount').textContent = `ทั้งหมด ${history.length} คำสั่งซื้อ`;
+
+            container.innerHTML = history.map(order => `
+                <div class="p-4 sm:p-5 rounded-2xl bg-dark-800/70 border border-purple-500/20 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-purple-500/15">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-sm text-white">${order.orderId}</span>
+                                <span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 text-[11px] font-medium">สำเร็จ</span>
+                            </div>
+                            <div class="text-xs text-purple-300/65 mt-0.5">${order.date} • ${order.paymentMethod}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-display font-bold text-lg text-neon-400">${order.total.toLocaleString()} ฿</div>
+                            ${order.discount > 0 ? `<div class="text-[11px] text-emerald-400">ประหยัดไป ${order.discount.toLocaleString()} ฿</div>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        ${order.items.map(item => `
+                            <div class="px-3.5 py-2.5 rounded-xl bg-dark-950/75 border border-purple-500/15 flex items-center justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="text-xs text-purple-300/75 truncate">${item.productName}</div>
+                                    <div class="font-mono font-bold text-xs sm:text-sm text-purple-100 tracking-wider select-all">${item.key}</div>
+                                </div>
+                                <button onclick="copyText('${item.key}', 'คัดลอกคีย์แล้ว!')" class="px-2.5 py-1.5 rounded-lg bg-purple-500/15 hover:bg-neon-600 text-purple-200 hover:text-white text-xs font-medium transition flex items-center gap-1 shrink-0">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    คัดลอก
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function showClearHistoryConfirm() {
+            const controls = document.getElementById('clearHistoryControls');
+            controls.innerHTML = `
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="text-rose-300">ยืนยันการลบ?</span>
+                    <button onclick="clearPurchaseHistory()" class="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium transition">ลบเลย</button>
+                    <button onclick="resetClearHistoryControls()" class="px-2.5 py-1 rounded-lg bg-dark-800 hover:bg-dark-700 text-purple-200 transition">ยกเลิก</button>
+                </div>
+            `;
+        }
+
+        function resetClearHistoryControls() {
+            const controls = document.getElementById('clearHistoryControls');
+            if (!controls) return;
+            controls.innerHTML = `
+                <button onclick="showClearHistoryConfirm()" class="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 transition">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    ล้างประวัติทั้งหมด
+                </button>
+            `;
+            lucide.createIcons();
+        }
+
+        function clearPurchaseHistory() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+                renderHistoryList();
+                showToast('ล้างประวัติการสั่งซื้อทั้งหมดแล้ว', 'info');
+            } catch (e) {
+                showToast('ไม่สามารถล้างประวัติได้', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
